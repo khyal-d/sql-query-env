@@ -1,3 +1,17 @@
+---
+title: SQL Query Writing Environment
+emoji: 🗄️
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+tags:
+  - openenv
+  - sql
+  - text-to-sql
+  - reinforcement-learning
+---
+
 # SQL Query Writing Environment
 
 An OpenEnv RL environment where an AI agent learns to write SQL queries from natural-language questions.
