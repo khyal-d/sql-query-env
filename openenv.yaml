@@ -1,0 +1,14 @@
+name: sql-query-env
+version: "1.0.0"
+description: >
+  RL environment for SQL query writing. An agent receives a natural-language
+  question about an e-commerce database and must write a SQL query that
+  answers it correctly. Scored by Jaccard similarity of result sets.
+author: khyaal-d
+license: MIT
+tags:
+  - openenv
+  - sql
+  - text-to-sql
+  - data-analysis
+  - real-world

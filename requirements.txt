@@ -1,0 +1,13 @@
+# Core OpenEnv framework
+openenv-core>=0.2.2
+
+# Server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# HTTP client (used by inference.py and baseline.py)
+requests>=2.28.0
+
+# Baseline inference (optional at runtime — only needed for /baseline endpoint)
+openai>=1.0.0
