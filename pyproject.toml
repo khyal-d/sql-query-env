@@ -1,0 +1,20 @@
+[project]
+name = "sql-query-env"
+version = "1.0.0"
+description = "RL environment for SQL query writing"
+requires-python = ">=3.11"
+dependencies = [
+    "openenv-core>=0.2.2",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.0.0",
+    "requests>=2.28.0",
+    "openai>=1.0.0",
+]
+
+[project.scripts]
+server = "app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

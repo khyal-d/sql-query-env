@@ -195,3 +195,12 @@ def _strip_markdown(text: str) -> str:
     elif "```" in text:
         text = text.split("```", 1)[1].split("```", 1)[0]
     return text.strip()
+
+
+def main() -> None:
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=7860)
+
+
+if __name__ == "__main__":
+    main()
