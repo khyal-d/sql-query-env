@@ -24,7 +24,7 @@ from typing import Optional
 from fastapi import HTTPException
 from pydantic import BaseModel
 
-from openenv.core.env_server import create_fastapi_app
+from openenv.core.env_server import create_app as create_fastapi_app
 from models import SQLAction, SQLObservation
 from environment import SQLEnvironment
 from tasks import TASKS, create_database, execute_query, compute_score, SCHEMA_DESCRIPTION
