@@ -198,10 +198,10 @@ git clone https://huggingface.co/spaces/khyaal-d/sql-query-env
 cd sql-query-env
 
 pip install -r requirements.txt
-uvicorn app:app --host 0.0.0.0 --port 7860 --reload
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Open http://localhost:7860/web for the browser UI or http://localhost:7860/docs for Swagger.
+Open http://localhost:8000/web for the browser UI or http://localhost:8000/docs for Swagger.
 
 ### Run with Docker
 
