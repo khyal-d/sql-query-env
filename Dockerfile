@@ -14,6 +14,8 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 # Copy application code
 COPY --chown=user . .
 
+ENV ENABLE_WEB_INTERFACE=true
+
 EXPOSE 7860
 
 # Single worker — environment state is in-memory per session; multiple workers
