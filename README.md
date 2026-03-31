@@ -1,10 +1,6 @@
 ---
 title: SQL Query Writing Environment
-emoji: 🗄️
-colorFrom: blue
-colorTo: green
 sdk: docker
-pinned: false
 tags:
   - openenv
   - sql
