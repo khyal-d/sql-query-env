@@ -29,8 +29,8 @@ import requests
 # ---------------------------------------------------------------------------
 # Config — all LLM credentials read from required env vars per spec
 # ---------------------------------------------------------------------------
-API_BASE_URL = os.environ.get("API_BASE_URL")
-MODEL_NAME   = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME   = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN     = os.environ.get("HF_TOKEN")
 SERVER_URL   = os.environ.get("SERVER_URL", "http://localhost:8000")
 
@@ -63,10 +63,8 @@ def run_task(client, task: dict) -> dict:
     question     = task["question"]
     max_attempts = task["max_attempts"]
 
-    print(f"\n{'='*60}")
-    print(f"Task {task_id} [{difficulty.upper()}]")
+    print(f"[START] task={task_id} difficulty={difficulty}")
     print(f"Q: {question}")
-    print(f"{'='*60}")
 
     # Reset environment for this task
     try:
@@ -104,7 +102,7 @@ def run_task(client, task: dict) -> dict:
             break
 
         query = strip_markdown(raw_query)
-        print(f"\n  [attempt {attempt+1}] Query: {query[:100]}{'...' if len(query) > 100 else ''}")
+        print(f"[STEP] task={task_id} attempt={attempt+1} query={query[:100]}")
 
         try:
             step_resp = requests.post(
@@ -123,7 +121,7 @@ def run_task(client, task: dict) -> dict:
         obs_inner     = step_obs.get("observation") or {}
         last_feedback = obs_inner.get("feedback", "")
 
-        print(f"  [attempt {attempt+1}] Score: {score:.3f} | {last_feedback[:80]}")
+        print(f"[STEP] task={task_id} attempt={attempt+1} score={score:.3f} feedback={last_feedback[:80]}")
 
         if score > best_score:
             best_score = score
@@ -132,6 +130,7 @@ def run_task(client, task: dict) -> dict:
         if step_obs.get("done") or obs_inner.get("done"):
             break
 
+    print(f"[END] task={task_id} score={best_score:.3f}")
     return {
         "task_id":    task_id,
         "difficulty": difficulty,
