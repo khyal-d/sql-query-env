@@ -6,19 +6,12 @@ Uses the OpenAI-compatible client to solve all 3 tasks.
 Each task allows up to 5 attempts; the agent sees feedback from prior attempts.
 
 Required environment variables:
-    API_BASE_URL   — LLM API endpoint (e.g. https://api.openai.com/v1)
-    MODEL_NAME     — model identifier (e.g. gpt-4o-mini)
     HF_TOKEN       — API key for the LLM
 
-Optional environment variables:
+Optional environment variables (have defaults):
+    API_BASE_URL   — LLM API endpoint (default: https://router.huggingface.co/v1)
+    MODEL_NAME     — model identifier (default: Qwen/Qwen2.5-72B-Instruct)
     SERVER_URL     — SQL environment server URL (default: http://localhost:8000)
-
-Usage:
-    # Against local server (start with: uvicorn app:app --port 8000)
-    API_BASE_URL=https://api.openai.com/v1 MODEL_NAME=gpt-4o-mini HF_TOKEN=sk-... python inference.py
-
-    # Against deployed HF Space
-    API_BASE_URL=https://api.openai.com/v1 MODEL_NAME=gpt-4o-mini HF_TOKEN=sk-... SERVER_URL=https://your-space.hf.space python inference.py
 """
 
 import os
@@ -27,11 +20,11 @@ import json
 import requests
 
 # ---------------------------------------------------------------------------
-# Config — all LLM credentials read from required env vars per spec
+# Config — all LLM credentials read from env vars per spec
 # ---------------------------------------------------------------------------
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-HF_TOKEN     = os.environ.get("HF_TOKEN")
+HF_TOKEN     = os.environ.get("HF_TOKEN", "")
 SERVER_URL   = os.environ.get("SERVER_URL", "http://localhost:8000")
 
 TEMPERATURE = 0.0
@@ -66,6 +59,10 @@ def run_task(client, task: dict) -> dict:
     print(f"[START] task={task_id} difficulty={difficulty}")
     print(f"Q: {question}")
 
+    best_score = 0.0
+    best_query = ""
+    last_feedback = ""
+
     # Reset environment for this task
     try:
         resp = requests.post(f"{SERVER_URL}/reset", json={"task_id": task_id}, timeout=30)
@@ -73,14 +70,12 @@ def run_task(client, task: dict) -> dict:
         obs = resp.json()
     except Exception as exc:
         print(f"  ERROR: Failed to reset task {task_id}: {exc}")
-        return {"task_id": task_id, "difficulty": difficulty, "score": 0.0, "best_query": ""}
+        print(f"[END] task={task_id} score={best_score:.3f}")
+        return {"task_id": task_id, "difficulty": difficulty, "score": best_score, "best_query": best_query}
 
-    obs_data       = obs.get("observation", obs)  # nested under "observation"
+    obs_data           = obs.get("observation") or obs
     schema_description = obs_data.get("schema_description", "")
-    episode_id    = obs_data.get("episode_id")
-    best_score    = 0.0
-    best_query    = ""
-    last_feedback = ""
+    episode_id         = obs_data.get("episode_id")
 
     for attempt in range(max_attempts):
         previous = ""
@@ -140,43 +135,47 @@ def run_task(client, task: dict) -> dict:
 
 
 def main():
-    # Only HF_TOKEN is truly required — API_BASE_URL and MODEL_NAME have defaults
-    if not os.environ.get("HF_TOKEN"):
-        print("ERROR: Missing required environment variable: HF_TOKEN")
-        sys.exit(1)
+    print(f"SQL Query Writing Environment — Baseline ({MODEL_NAME})")
+    print(f"LLM API: {API_BASE_URL}")
+    print(f"Server:  {SERVER_URL}")
 
+    # Set up OpenAI client
     try:
         from openai import OpenAI
-    except ImportError:
-        print("ERROR: openai package not installed. Run: pip install openai")
-        sys.exit(1)
+        client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
+    except Exception as exc:
+        print(f"WARNING: Could not initialise LLM client: {exc}")
+        client = None
 
-    client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
-
-    # Verify environment server is reachable (generous timeout for HF Space cold start)
+    # Verify server is reachable
     try:
         health = requests.get(f"{SERVER_URL}/health", timeout=60)
         health.raise_for_status()
+        print(f"Server health: OK")
     except Exception as exc:
-        print(f"ERROR: Cannot reach environment server at {SERVER_URL}: {exc}")
-        sys.exit(1)
+        print(f"WARNING: Server health check failed: {exc}")
 
-    # Fetch task list from server
+    # Fetch task list
+    tasks = []
     try:
         tasks_resp = requests.get(f"{SERVER_URL}/tasks", timeout=30)
         tasks_resp.raise_for_status()
         tasks = tasks_resp.json()["tasks"]
     except Exception as exc:
-        print(f"ERROR: Failed to fetch tasks from {SERVER_URL}/tasks: {exc}")
-        sys.exit(1)
-
-    print(f"\nSQL Query Writing Environment — Baseline ({MODEL_NAME})")
-    print(f"LLM API: {API_BASE_URL}")
-    print(f"Server:  {SERVER_URL}")
+        print(f"WARNING: Could not fetch tasks: {exc}")
+        # Fallback: hardcoded task list so script always produces output
+        tasks = [
+            {"task_id": 1, "difficulty": "easy",   "question": "List the name and city of every customer from France, ordered alphabetically by name.", "max_attempts": 5},
+            {"task_id": 2, "difficulty": "medium",  "question": "What is the total revenue for each product category from completed orders? Return the category and total_revenue (sum of quantity x unit_price), ordered by total_revenue descending.", "max_attempts": 5},
+            {"task_id": 3, "difficulty": "hard",    "question": "Find customers who placed at least one completed order in January 2024 AND at least one completed order in February 2024. For each such customer return their name and total_spending (sum of quantity x unit_price across both months), ordered by total_spending descending.", "max_attempts": 5},
+        ]
 
     results = {}
     for task in tasks:
-        result = run_task(client, task)
+        if client is not None:
+            result = run_task(client, task)
+        else:
+            result = {"task_id": task["task_id"], "difficulty": task["difficulty"], "score": 0.0, "best_query": ""}
         results[f"task_{result['task_id']}"] = result
 
     avg = sum(r["score"] for r in results.values()) / len(results) if results else 0.0
@@ -200,7 +199,6 @@ def main():
         "average_score": round(avg, 4),
     }
     print(f"\nJSON summary:\n{json.dumps(output, indent=2)}")
-    return output
 
 
 if __name__ == "__main__":
