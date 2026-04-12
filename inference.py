@@ -69,9 +69,13 @@ def run_task(client, task: dict) -> dict:
     print(f"{'='*60}")
 
     # Reset environment for this task
-    resp = requests.post(f"{SERVER_URL}/reset", json={"task_id": task_id}, timeout=30)
-    resp.raise_for_status()
-    obs = resp.json()
+    try:
+        resp = requests.post(f"{SERVER_URL}/reset", json={"task_id": task_id}, timeout=30)
+        resp.raise_for_status()
+        obs = resp.json()
+    except Exception as exc:
+        print(f"  ERROR: Failed to reset task {task_id}: {exc}")
+        return {"task_id": task_id, "difficulty": difficulty, "score": 0.0, "best_query": ""}
 
     obs_data       = obs.get("observation", obs)  # nested under "observation"
     schema_description = obs_data.get("schema_description", "")
@@ -150,18 +154,22 @@ def main():
 
     client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
 
-    # Verify environment server is reachable
+    # Verify environment server is reachable (generous timeout for HF Space cold start)
     try:
-        health = requests.get(f"{SERVER_URL}/health", timeout=10)
+        health = requests.get(f"{SERVER_URL}/health", timeout=60)
         health.raise_for_status()
     except Exception as exc:
         print(f"ERROR: Cannot reach environment server at {SERVER_URL}: {exc}")
         sys.exit(1)
 
     # Fetch task list from server
-    tasks_resp = requests.get(f"{SERVER_URL}/tasks", timeout=10)
-    tasks_resp.raise_for_status()
-    tasks = tasks_resp.json()["tasks"]
+    try:
+        tasks_resp = requests.get(f"{SERVER_URL}/tasks", timeout=30)
+        tasks_resp.raise_for_status()
+        tasks = tasks_resp.json()["tasks"]
+    except Exception as exc:
+        print(f"ERROR: Failed to fetch tasks from {SERVER_URL}/tasks: {exc}")
+        sys.exit(1)
 
     print(f"\nSQL Query Writing Environment — Baseline ({MODEL_NAME})")
     print(f"LLM API: {API_BASE_URL}")
