@@ -25,7 +25,7 @@ import requests
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 API_KEY      = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN", "")
-SERVER_URL   = os.environ.get("SERVER_URL", "http://localhost:8000")
+SERVER_URL   = os.environ.get("SERVER_URL", "https://khyaal-d-sql-query-env.hf.space")
 
 TEMPERATURE = 0.0
 MAX_TOKENS  = 400
