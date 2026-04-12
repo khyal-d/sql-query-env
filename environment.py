@@ -10,7 +10,7 @@ Each episode:
   2. The agent calls step(action, episode_id=...) up to 5 times.
   3. Each step executes the query on an in-memory SQLite DB and returns:
        - the query result (first 10 rows)
-       - a Jaccard-based reward signal (0.0 – 1.0)
+       - a Jaccard-based reward signal (0.0 - 1.0)
        - human-readable feedback
   4. Episode ends when the agent achieves a perfect score (1.0) or exhausts attempts.
 """
@@ -153,6 +153,10 @@ class SQLEnvironment(Environment[SQLAction, SQLObservation, SQLState]):
 
         done = (score == 1.0) or (attempts_remaining == 0)
 
+        # Clamp reward to open interval (0.01, 0.99) for validator compliance.
+        # Raw score is kept for done-detection and feedback logic above.
+        clamped_reward = max(0.01, min(0.99, score)) if score > 0.0 else 0.01
+
         # ── Build feedback message ─────────────────────────────────────
         expected_count = len(expected)
         actual_count   = len(actual_rows)
@@ -195,7 +199,7 @@ class SQLEnvironment(Environment[SQLAction, SQLObservation, SQLState]):
 
         return SQLObservation(
             done=done,
-            reward=score,
+            reward=clamped_reward,
             episode_id=eid,
             task_id=state.task_id,
             difficulty=task.difficulty,

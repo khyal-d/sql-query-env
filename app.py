@@ -78,7 +78,8 @@ async def grader(req: GraderRequest):
         raise HTTPException(status_code=500, detail=f"Internal error: {err}")
 
     actual_rows, query_err = execute_query(conn, req.query)
-    score = compute_score(actual_rows, expected_rows) if not query_err else 0.0
+    raw_score = compute_score(actual_rows, expected_rows) if not query_err else 0.0
+    score = max(0.01, min(0.99, raw_score)) if raw_score > 0.0 else 0.01
 
     return {
         "task_id":     req.task_id,
