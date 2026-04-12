@@ -118,8 +118,10 @@ def run_task(client, task: dict) -> dict:
             print(f"  [attempt {attempt+1}] Server error: {exc}")
             break
 
-        score         = step_obs.get("reward") or 0.0
-        last_feedback = step_obs.get("observation", {}).get("feedback", "")
+        reward        = step_obs.get("reward")
+        score         = float(reward) if reward is not None else 0.0
+        obs_inner     = step_obs.get("observation") or {}
+        last_feedback = obs_inner.get("feedback", "")
 
         print(f"  [attempt {attempt+1}] Score: {score:.3f} | {last_feedback[:80]}")
 
@@ -127,7 +129,7 @@ def run_task(client, task: dict) -> dict:
             best_score = score
             best_query = query
 
-        if step_obs.get("done") or step_obs.get("observation", {}).get("done"):
+        if step_obs.get("done") or obs_inner.get("done"):
             break
 
     return {
@@ -180,7 +182,7 @@ def main():
         result = run_task(client, task)
         results[f"task_{result['task_id']}"] = result
 
-    avg = sum(r["score"] for r in results.values()) / len(results)
+    avg = sum(r["score"] for r in results.values()) / len(results) if results else 0.0
 
     print(f"\n{'='*60}")
     print("BASELINE RESULTS")
