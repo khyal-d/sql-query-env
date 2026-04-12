@@ -140,11 +140,9 @@ def run_task(client, task: dict) -> dict:
 
 
 def main():
-    # Validate required env vars
-    missing = [v for v in ("API_BASE_URL", "HF_TOKEN") if not os.environ.get(v)]
-    if missing:
-        print(f"ERROR: Missing required environment variable(s): {', '.join(missing)}")
-        print("Required: API_BASE_URL, MODEL_NAME, HF_TOKEN")
+    # Only HF_TOKEN is truly required — API_BASE_URL and MODEL_NAME have defaults
+    if not os.environ.get("HF_TOKEN"):
+        print("ERROR: Missing required environment variable: HF_TOKEN")
         sys.exit(1)
 
     try:
