@@ -24,7 +24,7 @@ import requests
 # ---------------------------------------------------------------------------
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-HF_TOKEN     = os.environ.get("HF_TOKEN", "")
+API_KEY      = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN", "")
 SERVER_URL   = os.environ.get("SERVER_URL", "http://localhost:8000")
 
 TEMPERATURE = 0.0
@@ -142,7 +142,7 @@ def main():
     # Set up OpenAI client
     try:
         from openai import OpenAI
-        client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
+        client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
     except Exception as exc:
         print(f"WARNING: Could not initialise LLM client: {exc}")
         client = None
